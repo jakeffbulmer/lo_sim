@@ -29,8 +29,9 @@ class Circuit:
     @property
     def N(self):
         N = 0
-        for element in self.elements:
-            N = max(N, element.offset + element.n)
+        for layer in range(self.element_layer):
+            for element in self.elements[layer]:
+                N = max(N, element.offset + element.n)
         return N
 
     def _illustrate_input_state(self, state):
@@ -132,8 +133,10 @@ class Circuit:
     def evaluate_global_U(self):
         N = self.N
         U = np.eye(N, dtype=complex)
-        for element in self.elements.values():
-            U = element.global_unitary(N) @ U
+        for layer in range(self.element_layer):
+            layer_elements = self.elements[layer]
+            for element in layer_elements:
+                U = element.global_unitary(N) @ U
         self.global_U = U
 
     def _evolve_step_swap(self, state, element):
@@ -199,8 +202,10 @@ class Circuit:
 
     def evolve_in_steps(self):
         state = self.global_input_state
-        for element in self.elements:
-            state = self.evolve_step(state, element)
+        for layer in range(self.element_layer):
+            layer_elements = self.elements[layer]
+            for element in layer_elements:
+                state = self.evolve_step(state, element)
         return state
 
     def evolve(self):
