@@ -26,6 +26,7 @@ class QuantumState(dict):
 
         if len(self) == 0:
             return 0 
+
         total_prob = sum(abs(amp)**2 for amp in self.values())
         
         if total_prob == 0:
@@ -36,6 +37,17 @@ class QuantumState(dict):
             self[modes] = norm * amp
 
         return total_prob 
+
+    def overlap(self, state):
+        ov = 0j
+        for modes, amp in self.items():
+            amp = complex(amp)
+            ov += state[modes] * amp.conjugate()
+        return ov
+
+    def fidelity(self, state):
+        ov = self.overlap(state)
+        return abs(ov)**2
 
 class PhotonicState(QuantumState):
 
@@ -79,7 +91,7 @@ class PhotonicState(QuantumState):
 
         return logical_systems
 
-    def qudit_state(self):
+    def to_qudit_state(self):
 
         logical_systems = self.logical_systems()
 
@@ -125,6 +137,13 @@ class QuditState(QuantumState):
                 raise Exception('all terms in state must have n qudits')
             else:
                 self.n = self.n_systems
+
+    def to_photonic_state(self, logical_systems):
+        state = PhotonicState()
+        for modes, amp in self.items():
+            new_modes = tuple(logical_systems[i][mode] for i, mode in enumerate(modes))
+            state[new_modes] = amp 
+        return state
 
     def schmidt(self, a_sys=(0,), b_sys=(1,), compute_uv=False):
 

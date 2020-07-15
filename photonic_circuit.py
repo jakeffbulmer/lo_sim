@@ -5,6 +5,7 @@ from circuit_illustrator import CircuitIllustrator
 from optical_elements import Swap, OpticalUnitary, PhaseShift, OpticalElement
 from get_amplitude import create_get_amp
 from copy import copy
+from collections import defaultdict
 
 class Circuit:
     def __init__(self, state_threshold=1e-14, illustrate=True):
@@ -22,7 +23,8 @@ class Circuit:
         if self.illustrate:
             self.circuit_illustrator = CircuitIllustrator()
 
-        self.elements = []
+        self.elements = defaultdict(list)
+        self.element_layer = 0
 
     @property
     def N(self):
@@ -115,10 +117,11 @@ class Circuit:
             offset = top_mode + optical_element.n
             modes = range(top_mode, offset)
 
-            self.elements.append(optical_element)
+            self.elements[self.element_layer].append(optical_element)
 
             if self.illustrate:
                 self._illustrate_optical_element(optical_element, modes)
+        self.element_layer += 1
 
     def add_detectors(self, modes):
         self.detected_modes.update(modes)
@@ -129,7 +132,7 @@ class Circuit:
     def evaluate_global_U(self):
         N = self.N
         U = np.eye(N, dtype=complex)
-        for element in self.elements:
+        for element in self.elements.values():
             U = element.global_unitary(N) @ U
         self.global_U = U
 
@@ -211,8 +214,6 @@ class Circuit:
         """
         get all possible photon outcome patterns which are consistent with a detection pattern
         """
-        if self.global_U is None:
-            self.evaluate_global_U()
 
         undetected_photons = self.photon_number - sum(detector_pattern)
         undetected_modes = set(range(self.global_U.shape[0])) - self.detected_modes
@@ -234,6 +235,9 @@ class Circuit:
 
     def evolve_to_detector_pattern(self, detector_pattern,
         normalise=True, reduce_state=True):
+
+        if self.global_U is None:
+            self.evaluate_global_U()
     
         if len(detector_pattern) != len(self.detected_modes):
             raise Exception(
