@@ -102,7 +102,7 @@ class Circuit:
         else:
             raise Exception('illustration not implemented for this element')
                 
-    def add_optical_elements(self, *optical_elements):
+    def add_optical_layer(self, *optical_elements):
         offset = 0
         for optical_element in optical_elements:
 
@@ -172,9 +172,9 @@ class Circuit:
         element_modes = set(range(element.offset, element.offset+element.n))
         for in_modes, in_amp in state.items():
 
-            # find which input modes can interfere
+            # find which input modes interfere
             intf_in_modes = tuple(i for i in in_modes if i in element_modes)
-            # find which input modes can't interfere
+            # find which input modes don't interfere
             non_intf_modes = tuple(i for i in in_modes if i not in element_modes)
 
             # create function which will calculate the permanent
@@ -191,7 +191,7 @@ class Circuit:
                         del new_state[out_modes]
         return new_state
 
-    def evolve_step(self, state, element):
+    def evolve_element(self, state, element):
         if isinstance(element, Swap):
             state = self._evolve_step_swap(state, element)
         elif isinstance(element, PhaseShift):
@@ -200,12 +200,12 @@ class Circuit:
             state = self._evolve_step(state, element)
         return state
 
-    def evolve_in_steps(self):
+    def evolve_by_elements(self):
         state = self.global_input_state
         for layer in range(self.element_layer):
             layer_elements = self.elements[layer]
             for element in layer_elements:
-                state = self.evolve_step(state, element)
+                state = self.evolve_element(state, element)
         return state
 
     def evolve(self):
