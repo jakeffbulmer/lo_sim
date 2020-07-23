@@ -7,7 +7,13 @@ class OpticalElement(abc.ABC):
 
     @abc.abstractmethod
     def global_unitary(self, N):
+        # this method must be implemented by all
+        # subclasses
         pass
+
+    @property
+    def acting_modes(self):
+        return set(range(self.offset, self.offset+element.n))
 
 class OpticalUnitary(OpticalElement):
     def __init__(self, U, offset=None, label=''):
@@ -60,7 +66,7 @@ class PhaseShift(OpticalUnitary):
 class DFT(OpticalUnitary):
     def __init__(self, d, offset=None, label=''):
         if not label:
-            label = r'$DFT_{}$'.format(d)
+            label = r'$DFT_{{{}}}$'.format(d)
         U = (d ** (-0.5)) * np.fft.fft(np.eye(d))
         super().__init__(U, offset, label)
 

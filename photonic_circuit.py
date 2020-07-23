@@ -1,5 +1,5 @@
 import numpy as np 
-from itertools import product, combinations_with_replacement
+from itertools import product, combinations_with_replacement, combinations
 from states import PhotonicState 
 from circuit_illustrator import CircuitIllustrator
 from optical_elements import Swap, OpticalUnitary, PhaseShift, OpticalElement
@@ -17,7 +17,7 @@ class Circuit:
 
         self.detected_modes = set()
 
-        self.global_U = None
+        self._global_U = None
 
         self.illustrate = illustrate
         if self.illustrate:
@@ -35,6 +35,7 @@ class Circuit:
         return N
 
     def _illustrate_input_state(self, state):
+        # TODO: something more cool for input states in superposition
         state_modes = state.modes
         for mode in state_modes: 
             self.circuit_illustrator.add_photon(mode)
@@ -112,7 +113,7 @@ class Circuit:
                 raise Exception('all objects must be an OpticalElement')
 
             if optical_element.offset is None:
-                optical_element.offset = offset 
+                optical_element.offset = offset
 
             top_mode = optical_element.offset
             offset = top_mode + optical_element.n
@@ -130,14 +131,15 @@ class Circuit:
             for mode in modes:
                 self.circuit_illustrator.add_detector(mode)
 
-    def evaluate_global_U(self):
+    @property
+    def global_U(self):
         N = self.N
         U = np.eye(N, dtype=complex)
         for layer in range(self.element_layer):
             layer_elements = self.elements[layer]
             for element in layer_elements:
                 U = element.global_unitary(N) @ U
-        self.global_U = U
+        return U
 
     def _evolve_step_swap(self, state, element):
         new_state = PhotonicState()
@@ -169,7 +171,7 @@ class Circuit:
         N = self.N 
         new_state = PhotonicState()
         # we figure out where the photons could end up if they go into the element
-        element_modes = set(range(element.offset, element.offset+element.n))
+        element_modes = element.acting_modes
         for in_modes, in_amp in state.items():
 
             # find which input modes interfere
@@ -209,8 +211,8 @@ class Circuit:
         return state
 
     def evolve(self):
-        if self.global_U is None:
-            self.evaluate_global_U()
+        if self._global_U is None:
+            self._global_U = self.global_U
         # get amplitudes for all possible output states
         outcomes = combinations_with_replacement(range(self.N), self.photon_number)
         return self.calculate_new_amplitudes_full_U(outcomes)
@@ -221,7 +223,7 @@ class Circuit:
         """
 
         undetected_photons = self.photon_number - sum(detector_pattern)
-        undetected_modes = set(range(self.global_U.shape[0])) - self.detected_modes
+        undetected_modes = set(range(self._global_U.shape[0])) - self.detected_modes
 
         #write down the detector outcome in terms of which modes the photons arrived 
         detector_outcome = []
@@ -241,8 +243,8 @@ class Circuit:
     def evolve_to_detector_pattern(self, detector_pattern,
         normalise=True, reduce_state=True):
 
-        if self.global_U is None:
-            self.evaluate_global_U()
+        if self._global_U is None:
+            self._global_U = self.global_U
     
         if len(detector_pattern) != len(self.detected_modes):
             raise Exception(
@@ -261,7 +263,7 @@ class Circuit:
         outcomes = list(outcomes)
 
         for in_modes, in_amp in self.global_input_state.items():
-            get_amp = create_get_amp(self.global_U, in_modes, in_amp)
+            get_amp = create_get_amp(self._global_U, in_modes, in_amp)
 
             outcomes_amps = [get_amp(out_modes) for out_modes in outcomes]
 
@@ -283,6 +285,45 @@ class Circuit:
     def gen_detector_patterns(self, detected_photons):
         n_det = len(self.detected_modes)
         for modes in combinations_with_replacement(range(n_det), detected_photons):
+            pattern = np.zeros(n_det, dtype=int)
+            np.add.at(pattern, np.asarray(modes), 1)
+            yield pattern
+
+    def gen_constrained_detector_patterns(self, det_group_sizes, photon_numbers=None,
+        only_single_click=False):
+        """
+        pass in two lists describing how many detectors are in each group and how
+        many photons each group needs to detect in total
+        """
+
+        n_det = len(self.detected_modes)
+
+        if photon_numbers is None:
+            photon_numbers = [1] * len(det_group_sizes)
+
+        if sum(photon_numbers) > self.photon_number:
+            raise Exception('more photons than in state')
+
+        if sum(det_group_sizes) != n_det:
+            raise Exception('group sizes do not cover all detectors')
+
+        det_groups = dict()
+        mode = 0
+        for size, n in zip(det_group_sizes, photon_numbers):
+            group = tuple(range(mode, mode+size))
+            det_groups[group] = n
+            mode += size
+
+        if not only_single_click:
+            group_gen = combinations_with_replacement
+        else:
+            group_gen = combinations 
+
+        for groups_modes in product(*(
+            group_gen(group, photons) 
+                for group, photons in det_groups.items())):
+
+            modes = tuple(i for m in groups_modes for i in m)
             pattern = np.zeros(n_det, dtype=int)
             np.add.at(pattern, np.asarray(modes), 1)
             yield pattern

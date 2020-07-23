@@ -95,9 +95,8 @@ class CircuitIllustrator():
 		if mode_ends is None:
 			mode_ends = mode_starts
 
-		if offset != 0:
-			mode_starts = [m + offset for m in mode_starts]
-			mode_ends = [m + offset for m in mode_ends]
+		mode_starts = [m + offset for m in mode_starts]
+		mode_ends = [m + offset for m in mode_ends]
 
 		plotted_mode_starts = []
 		plotted_mode_ends = []
@@ -110,8 +109,11 @@ class CircuitIllustrator():
 					raise Exception('route must start on active modes')
 		mode_starts, mode_ends = plotted_mode_starts, plotted_mode_ends
 
-		start = max(self.mode_distance[m] for m in mode_starts)
+		if len(mode_starts) == 0:
+			return 
 
+		start = max(self.mode_distance[m] for m in mode_starts + mode_ends)
+		
 		for mode in mode_starts:
 			if self.mode_distance[mode] < start:
 				self.add_identity([mode], start - self.mode_distance[mode])
