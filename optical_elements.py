@@ -13,7 +13,7 @@ class OpticalElement(abc.ABC):
 
     @property
     def acting_modes(self):
-        return set(range(self.offset, self.offset+element.n))
+        return set(range(self.offset, self.offset+self.n))
 
 class OpticalUnitary(OpticalElement):
     def __init__(self, U, offset=None, label=''):

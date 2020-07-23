@@ -32,25 +32,36 @@ except:
 
 fact_list = [factorial(n) for n in range(30)]
 
-def create_get_amp(U, in_modes, in_amp):
-   
-    in_norm = np.prod([fact_list[in_modes.count(i)] for i in set(in_modes)], dtype=float)
-    
+def create_get_amp_from_out_modes(U, out_modes):
+       
+    if len(out_modes) > 1:    
+        def get_amp(in_modes):
+            sub_matr = U[np.ix_(out_modes, in_modes)]
+            return perm(sub_matr)
+            
+    elif len(out_modes) == 1:
+        def get_amp(in_modes):
+            return U[out_modes[0], in_modes[0]] 
+
+    else: #if len(in_modes) == 0
+        def get_amp(in_modes):
+            return 1.
+
+    return get_amp
+
+def create_get_amp_from_in_modes(U, in_modes):
+       
     if len(in_modes) > 1:    
         def get_amp(out_modes):
             sub_matr = U[np.ix_(out_modes, in_modes)]
-            p = perm(sub_matr)
-            out_norm = np.prod([fact_list[out_modes.count(i)] for i in set(out_modes)], dtype=float)
-            norm = (in_norm * out_norm) ** (-0.5)
-            amp = norm * p * in_amp
-            return amp
+            return perm(sub_matr)
             
     elif len(in_modes) == 1:
         def get_amp(out_modes):
-            return U[out_modes[0], in_modes[0]] * in_amp
+            return U[out_modes[0], in_modes[0]] 
 
-    else: # if len(in_modes) == 0
+    else: #if len(in_modes) == 0
         def get_amp(out_modes):
-            return in_amp
+            return 1.
 
     return get_amp
