@@ -3,7 +3,6 @@ from photonic_circuit import Circuit
 from states import PhotonicState
 from optical_elements import Swap, PhaseShift
 from itertools import combinations_with_replacement
-from thewalrus import perm
 from multi_perm import multi_perm
 from get_amplitude import create_get_amp_from_out_modes, create_get_amp_from_in_modes
 from math import factorial
