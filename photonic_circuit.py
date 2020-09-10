@@ -33,6 +33,8 @@ class Circuit:
         number of modes in the whole circuit
         """
         N = 0
+        for modes in self.global_input_state.keys():
+            N = max(N, max(modes)+1)
         for layer in range(self.element_layers):
             for element in self.elements[layer]:
                 N = max(N, element.offset + element.n)

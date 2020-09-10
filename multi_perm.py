@@ -5,6 +5,10 @@ parallel=True
 
 @numba.jit(nopython=True)
 def numba_combinations(pool, r):
+    """
+    a numba compatible version of 
+    itertools combinations function
+    """
     n = len(pool)
     indices = list(range(r))
     empty = not(n and (0 < r <= n))

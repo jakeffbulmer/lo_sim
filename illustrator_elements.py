@@ -222,8 +222,8 @@ class Modulator(IllustratorElement):
         self.colour = colour 
 
     def draw(self, ax):
-        ax.plot([self.start, self.start+self.width,
-            self.mode, self.mode], **self.mode_plot_kwargs)
+        ax.plot([self.start, self.start+self.width],
+            [self.mode, self.mode], **self.mode_plot_kwargs)
         if self.shape == 'rectangle':
             rect_height = 0.3
             rect_pad = 0.15
@@ -236,9 +236,9 @@ class Modulator(IllustratorElement):
             tri_width = 0.2
             centre_offset = 0.15
             tri_points = np.array([
-                [-tri_wdith,-centre_offset],
-                [tri_wdith,-centre_offset],
-                [0,centre_offset]])
+                [-tri_width,centre_offset],
+                [tri_width,centre_offset],
+                [0,-centre_offset]])
                 # [-tri_width, -centre_offset]])
             tri_points += np.array([
                 self.start+0.5*self.width,

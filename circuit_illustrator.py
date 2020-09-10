@@ -36,8 +36,6 @@ class CircuitIllustrator():
 			raise Exception(
 				'at least one of the inputs to the box should be active')
 
-		self.active_modes.update(modes)
-
 		if input_pad > 0:
 			self.add_identity(modes, input_pad)
 
@@ -46,15 +44,21 @@ class CircuitIllustrator():
 		box = Box(start, modes, label, self.box_width,
 			colour, self.fontsize, rounded, pad)
 
-		self.elements.append(box)
-		for mode in modes:
-			self.mode_distance[mode] = start + box.width
-
 		# add routes to modes which are not at the box input
 		for mode in modes:
 			if mode in self.active_modes:
 				if self.mode_distance[mode] < start:
-					self.add_route([mode], [mode], self.mode_distance[mode] - start)
+					self.add_route([mode], 
+						width=start-self.mode_distance[mode]-self.input_pad,
+						input_pad=0)
+
+		self.active_modes.update(modes)
+
+		self.elements.append(box)
+		for mode in modes:
+			self.mode_distance[mode] = start + box.width
+
+
 
 	def add_photon(self, mode, colour='red'):
 
@@ -75,9 +79,15 @@ class CircuitIllustrator():
 
 	def add_identity(self, modes, width=1):
 
+		plotted_modes = []
 		for mode in modes:
-			if mode not in self.active_modes:
-				raise Exception('route must start on active modes')
+			if mode in self.active_modes:
+				plotted_modes.append(mode)
+			else:
+				if not self.ignore_vacuum: 
+					raise Exception('route must start on active modes')
+
+		modes = plotted_modes
 
 		start = max(self.mode_distance[m] for m in modes)
 
@@ -214,9 +224,9 @@ class CircuitIllustrator():
 			if mode not in self.active_modes:
 				raise Exception('modulator modes must be active')
 
-			modulatator = Modulator(start, mode, shape, colour)
-			self.elements.append(modulatator)
-			self.mode_distance = start + modulator.width
+			modulator = Modulator(start, mode, shape, colour)
+			self.elements.append(modulator)
+			self.mode_distance[mode] = start + modulator.width
 
 	def draw(self, x_scale=0.4, y_scale=0.4, fig=None, ax=None):
 
